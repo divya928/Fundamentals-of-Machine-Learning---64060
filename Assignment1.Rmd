@@ -55,6 +55,7 @@ ggplot(ds.salaries, aes(x = work_year, y = salary_in_usd))+ geom_point(color = "
 #creating histogram
 library(ggplot2)
 
-ggplot(ds.salaries, aes(x = salary_in_usd)) + geom_histogram(binwidth = 10, fill = "yellow", color = "black")
+ggplot(ds.salaries, aes(x = salary_in_usd)) + geom_histogram(binwidth = 10, fill = "yellow", color = "black") +
+labs(title = "Histogram", x = "salary_in_usd", y = "work_year")
 ```
 
