@@ -1,0 +1,155 @@
+---
+title: "FML ASSIGNMENT4"
+author: "DIVYA CHANDRASEKARAN_811284790"
+date: "2023-11-12"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+#Loading the Required packages
+library(flexclust)
+library(cluster)
+library(tidyverse)  
+library(factoextra) 
+```
+
+```{r}
+library(FactoMineR)
+library(ggcorrplot)
+library(gridExtra)
+```
+
+```{r}
+#LOADING THE DATA
+getwd()
+
+```
+
+```{r}
+
+setwd("C:/Users/spadd/OneDrive/Desktop")
+
+```
+
+```{r}
+#LOADING THE PHARMACEUTICALS DATASET INTO A DATAFRAME CALLED 'PHARM.DATA'
+#USING str() TO VIEW THE STRUCTURE OF THE DATA
+pharm.data<- read.csv("C:/Users/spadd/OneDrive/Desktop/Pharmaceuticals.csv")
+str(pharm.data)
+```
+
+```{r}
+#REMOVING ANY MISSING VALUE THAT MIGHT BE PRESENT IN THE DATA
+pharm.data <- na.omit(pharm.data)
+
+```
+
+```{r}
+#QUESTION A
+
+#COLLECTING THE NUMERICAL VARIABLES FROM COLUMNS 1 TO 9 TO CLUSTER 21 FIRMS.
+
+row.names(pharm.data)<- pharm.data[,1]
+P1<- pharm.data[, 3:11]
+head(P1)
+```
+
+```{r}
+#HERE, WE WILL NORMALIZE THE DATA
+#SCALING THE DATA USING SCALE FUNCION.
+
+pharm.dataframe<- scale(P1)
+head(pharm.dataframe)
+```
+
+```{r}
+#Computing K-means clustering in R for different centers Using multiple values of K and examine the differences in results
+
+kmeans <- kmeans(pharm.dataframe, centers = 2, nstart = 30) #RUNNING K-MEANS CLUSTERING WITH DIFFERENT K VALUES
+kmeans1 <- kmeans(pharm.dataframe, centers = 5, nstart = 30)
+kmeans2 <- kmeans(pharm.dataframe, centers = 6, nstart = 30)
+
+Plot1 <-fviz_cluster(kmeans, data = pharm.dataframe)+ggtitle("k=2") #VISUALIZING THE CLUSTERS USING fviz_cluster()
+
+plot2 <-fviz_cluster(kmeans1, data = pharm.dataframe)+ggtitle("k=5")
+
+plot3 <-fviz_cluster(kmeans2, data = pharm.dataframe)+ggtitle("k=6")
+
+grid.arrange(Plot1,plot2,plot3, nrow = 2) #ARRANGING THE PLOTS IN A GRID USING GRID.ARRANGE()
+```
+
+```{r}
+#DETERMING THE OPTIMAL CLUSTERS USING ELBOW METHOD
+#THEREFORE, WE WILL CALCULATE THE DISTANCE MATRIX BETWEEN ROWS USING EUCLIDEAN DISTANCE
+
+pharm.distance<- dist(pharm.dataframe, method = "euclidean") #CALCULATIING THE DISTANCE MATRIX BETWEEN ROWS OF DATA MTRIX.
+fviz_dist(pharm.distance)  #VISUALIZING A DATA MATRIX
+```
+
+```{r}
+#HERE, FOR EACH k, WE WILL CALCULATE THE TOTAL WITHIN-CLUSTER SUMS OF SQUARE.
+#COMPUTING AND PLOTTING WSS FOR K=1, ANS EXTRACTING WSS FOR 2-15 CLUSTERS THE LOCATION OF A BEND (knee) in the plot is generally considered as an indicator of the appropriate number of clusters k =5.
+
+#COMPUTING THE TOTAL WITHIN-CLUSTER SUMS OF SQUARES DFFOR DIFFERENT K-VALUES
+
+set.seed(123)
+wss<- function(k){
+kmeans(pharm.dataframe, k, nstart =10)$tot.withinss
+}
+k.values<- 1:10
+wss_clusters<- map_dbl(k.values, wss)
+plot(k.values, wss_clusters, type="b", pch = 16, frame = TRUE, xlab="Number of clusters",ylab="Total within-clusters sum of squares")  #PLOTTING WSS VS K VALUES FROM 1 TO 10 TI FIND THE ELBOW POINT
+
+#The plot shows 5 clusters are sufficient to capture most variations in the data
+```
+
+```{r}
+#RUNNING FINAL K-MEANS MODEL WITH K=5 BASED ON ELBOW METHOD
+#HERE, THE FINAL ANALYSIS IS COMPUTED AND EXTRACTING THE RESULTS USING FIVE CLUSTERS.
+set.seed(123)
+pharm.final<- kmeans(pharm.dataframe, 5, nstart = 25)
+print(pharm.final)
+```
+
+```{r}
+#VISUALIZING THE FINAL CLUSTERS
+fviz_cluster(pharm.final, data = pharm.dataframe)
+```
+
+```{r}
+#ADDING CLUSTER ASSIGNMENTS TO ORIGINAL DATA
+#CALCULATING THE MEAN OF EACH FEATURE BY CLUSTER
+P1%>%
+mutate(Cluster = pharm.final$cluster) %>%
+group_by(Cluster)%>% summarise_all("mean")
+
+```
+
+```{r}
+#VISUALIZING THE CLUSTERS ON PARALLEL COORDINATE PLOOTS
+clusplot(pharm.dataframe,pharm.final$cluster, color = TRUE, labels = 2,lines = 0)
+```
+
+```{r}
+#EXTRACTING THE KEY VARIABLES AND ADDING CLUSTER ASSIGNMENTS
+#ARRANGING BY CLUSTERS AND VIEWING THE DATASET
+ClusterForm<- pharm.data[,c(12,13,14)]%>% mutate(clusters = pharm.final$cluster)%>% arrange(clusters, ascending = TRUE)
+ClusterForm
+
+```
+
+```{r}
+#CREATING BAR PLOTS OF KEY VARIALES BY CLUSTER
+p1<-ggplot(ClusterForm, mapping = aes(factor(clusters), fill = Median_Recommendation)) + geom_bar(position = 'dodge') + labs(x ='Number of clusters')
+
+p2<- ggplot(ClusterForm, mapping = aes(factor(clusters),fill = Location)) + geom_bar(position = 'dodge') + labs(x ='Number of clusters')
+
+p3<- ggplot(ClusterForm, mapping = aes(factor(clusters),fill = Exchange)) + geom_bar(position = 'dodge') + labs(x ='Number of clusters')
+
+grid.arrange(p1,p2,p3)
+
+```
+
+
